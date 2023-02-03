@@ -1139,38 +1139,29 @@ def adfly(url):
 ##############################################################################################        
 # gplinks
 
-def gplinks_bypass(url: str):
-    url = url[:-1] if url[-1] == '/' else url
-    token = url.split("/")[-1]
-
-    domain = "https://gplinks.co/"
-    referer = "https://mynewsmedia.co/"
-
+def gplinks_bypass(url):
     client = requests.Session()
-    response = client.get(url, allow_redirects=False)
-    if "Location" in response.headers:
-        vid = response.headers["Location"].split("=")[-1]
-        url = f"{url}/?{vid}"
+    res = client.get(url)
 
-        response = client.get(url, allow_redirects=False)
-        soup = BeautifulSoup(response.content, "html.parser")
+    h = {"referer": res.url}
+    res = client.get(url, headers=h)
 
-        inputs = soup.find(id="go-link").find_all(name="input")
-        data = {input.get('name'): input.get('value') for input in inputs}
+    bs4 = BeautifulSoup(res.content, 'lxml')
+    inputs = bs4.find_all('input')
+    data = {input.get('name'): input.get('value') for input in inputs}
 
-        time.sleep(5)
-        headers = {"x-requested-with": "XMLHttpRequest"}
-        bypassed_url = client.post(domain + "links/go", data=data, headers=headers).json()["url"]
-        return bypassed_url
-    else:
-        return None
+    h = {
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-requested-with': 'XMLHttpRequest'
+    }
 
-url = "https://gplinks.co/your_url"
-bypassed_url = gplinks_bypass(url)
-if bypassed_url:
-    print(bypassed_url)
-else:
-    print("No bypassed URL found")
+    time.sleep(10)  # !important
+
+    p = urlparse(url)
+    final_url = f'{p.scheme}://{p.netloc}/links/go'
+    res = client.post(final_url, data=data, headers=h).json()
+
+    return res
 
 
 ######################################################################################################
